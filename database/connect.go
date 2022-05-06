@@ -29,7 +29,7 @@ func Connect() {
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("DB接続失敗", err.Error())
 	}
 
 }
