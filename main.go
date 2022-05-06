@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"restapi-echo-gorm/database"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -25,8 +26,8 @@ type User struct {
 type Invoice struct {
 	Id                 int        `json:"id"`
 	Name               string     `json:"name"`
-	Price              int        `json:price`
-	TargetYearAndMonth string     `json:target_year_and_month`
+	Price              int        `json:"price"`
+	TargetYearAndMonth string     `json:"target_year_and_month"`
 	SentAt             *time.Time `json:"sent_at"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
@@ -59,8 +60,33 @@ func createInvoice(c echo.Context) error {
 	if err := c.Bind(i); err != nil {
 		return err
 	}
+	month := c.Param("target_year_and_month")
+	fmt.Println("TargetYearAndMonth", month)
 	invoice := Invoice{Name: i.Name, Price: i.Price, UserID: i.UserID, TargetYearAndMonth: i.TargetYearAndMonth}
 	database.DB.Create(&invoice)
+	return c.JSON(http.StatusCreated, invoice)
+}
+
+func chargeInvoice(c echo.Context) error {
+	// /:idからInvoiceを取得
+	invoiceID := c.Param("id")
+	invoice := Invoice{}
+	database.DB.First(&invoice, invoiceID)
+	t := time.Now()
+	invoice.SentAt = &t
+	database.DB.Save(&invoice)
+
+	user := User{}
+	database.DB.First(&user, invoice.UserID)
+
+	bot, err := linebot.New(os.Getenv("LINE_CHANNEL_SECRET"), os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	bot.PushMessage(user.LineUserId, linebot.NewTextMessage(invoice.TargetYearAndMonth+"月分の請求\n請求内容:"+invoice.Name+"\n"+"金額: "+strconv.Itoa(invoice.Price)+"円")).Do()
+
 	return c.JSON(http.StatusCreated, invoice)
 }
 
@@ -132,7 +158,8 @@ func main() {
 
 	e.GET("/users", getUsers)
 	e.POST("/users", createUser)
-	e.GET("/invoices", getUserWithInvoices)
+	e.GET("/invoices", getInvoices)
+	e.POST("/invoices/:id/charge", chargeInvoice)
 	e.POST("/invoices", createInvoice)
 	e.POST("/line_webhook", lineWebHook)
 
