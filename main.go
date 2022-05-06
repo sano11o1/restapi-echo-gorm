@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"restapi-echo-gorm/database"
 	"time"
 
@@ -8,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 type User struct {
@@ -67,6 +70,32 @@ func getUserWithInvoices(c echo.Context) error {
 	return c.JSON(http.StatusOK, users)
 }
 
+func lineWebHook(c echo.Context) error {
+	req := c.Request()
+	bot, err := linebot.New(os.Getenv("LINE_CHANNEL_SECRET"), os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	events, err := bot.ParseRequest(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, event := range events {
+		if event.Type == linebot.EventTypeMessage {
+			switch message := event.Message.(type) {
+			case *linebot.TextMessage:
+				replyMessage := message.Text
+				_, err := bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
+				if err != nil {
+					// Do something when some bad happened
+					fmt.Println(err)
+				}
+			}
+		}
+	}
+	return c.JSON(http.StatusOK, "OK")
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -80,6 +109,7 @@ func main() {
 	e.POST("/users", createUser)
 	e.GET("/invoices", getUserWithInvoices)
 	e.POST("/invoices", createInvoice)
+	e.POST("/line_webhook", lineWebHook)
 
 	e.Logger.Fatal(e.Start(":3000"))
 }
