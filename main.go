@@ -16,6 +16,18 @@ type User struct {
 	LineUserId string    `json:"line_user_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	Invoices   []Invoice
+}
+
+type Invoice struct {
+	Id                 int        `json:"id"`
+	Name               string     `json:"name"`
+	Price              int        `json:price`
+	TargetYearAndMonth string     `json:target_year_and_month`
+	SentAt             *time.Time `json:"sent_at"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	UserID             uint       `json:"user_id"`
 }
 
 func getUsers(c echo.Context) error {
@@ -33,6 +45,22 @@ func createUser(c echo.Context) error {
 	return c.JSON(http.StatusCreated, user)
 }
 
+func getInvoices(c echo.Context) error {
+	invoices := []Invoice{}
+	database.DB.Find(&invoices)
+	return c.JSON(http.StatusOK, invoices)
+}
+
+func createInvoice(c echo.Context) error {
+	i := new(Invoice)
+	if err := c.Bind(i); err != nil {
+		return err
+	}
+	invoice := Invoice{Name: i.Name, Price: i.Price, UserID: i.UserID, TargetYearAndMonth: i.TargetYearAndMonth}
+	database.DB.Create(&invoice)
+	return c.JSON(http.StatusCreated, invoice)
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -44,6 +72,8 @@ func main() {
 
 	e.GET("/users", getUsers)
 	e.POST("/users", createUser)
+	e.GET("/invoices", getInvoices)
+	e.POST("/invoices", createInvoice)
 
 	e.Logger.Fatal(e.Start(":3000"))
 }
