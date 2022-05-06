@@ -84,11 +84,36 @@ func lineWebHook(c echo.Context) error {
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
-				replyMessage := message.Text
-				_, err := bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
-				if err != nil {
-					// Do something when some bad happened
-					fmt.Println(err)
+				if message.Text == "振込先を追加" {
+					user := User{}
+					result := database.DB.Where(&User{LineUserId: event.Source.UserID}).First(&user)
+					if result.RowsAffected > 0 {
+						_, err := bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("既に登録済みです")).Do()
+						if err != nil {
+							// Do something when some bad happened
+							fmt.Println(err)
+						}
+					} else {
+						lineUserId := event.Source.UserID
+						res, err := bot.GetProfile(lineUserId).Do()
+						if err != nil {
+							// Do something when some bad happened
+							fmt.Println(err)
+						}
+						newUser := User{Name: res.DisplayName, LineUserId: lineUserId}
+						database.DB.Create(&newUser)
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(res.DisplayName+"で登録しました")).Do()
+						if err != nil {
+							// Do something when some bad happened
+							fmt.Println(err)
+						}
+					}
+				} else {
+					_, err := bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("そのメッセージには応答できません")).Do()
+					if err != nil {
+						// Do something when some bad happened
+						fmt.Println(err)
+					}
 				}
 			}
 		}
