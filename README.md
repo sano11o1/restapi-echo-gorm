@@ -7,5 +7,5 @@ use go_mysql8_development
 
 マイグレーション実行
 ```
-migrate -database "mysql://webuser:webpass@tcp(gorm-test:3306)/go_mysql8_development" -source "file://database/migrations/" up
+migrate -database "mysql://webuser:webpass@tcp(localhost:3306)/go_mysql8_development" -source "file://database/migrations/" up
 ```
