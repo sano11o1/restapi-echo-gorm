@@ -25,7 +25,7 @@ func Connect() {
 	port := os.Getenv("DB_PORT")
 	database_name := os.Getenv("DB_DATABASE_NAME")
 
-	dsn := user + ":" + password + "@tcp(" + "gorm-test" + ":" + port + ")/" + database_name + "?charset=utf8mb4"
+	dsn := user + ":" + password + "@tcp(" + "gorm-test" + ":" + port + ")/" + database_name + "?charset=utf8mb4" + "&parseTime=true"
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 
 	if err != nil {

@@ -16,7 +16,7 @@ type User struct {
 	LineUserId string    `json:"line_user_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	Invoices   []Invoice
+	Invoices   []Invoice `json:"invoices"`
 }
 
 type Invoice struct {
@@ -61,6 +61,12 @@ func createInvoice(c echo.Context) error {
 	return c.JSON(http.StatusCreated, invoice)
 }
 
+func getUserWithInvoices(c echo.Context) error {
+	users := []User{}
+	database.DB.Preload("Invoices").Find(&users)
+	return c.JSON(http.StatusOK, users)
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -72,7 +78,7 @@ func main() {
 
 	e.GET("/users", getUsers)
 	e.POST("/users", createUser)
-	e.GET("/invoices", getInvoices)
+	e.GET("/invoices", getUserWithInvoices)
 	e.POST("/invoices", createInvoice)
 
 	e.Logger.Fatal(e.Start(":3000"))
