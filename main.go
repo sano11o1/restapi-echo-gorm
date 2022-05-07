@@ -110,7 +110,7 @@ func lineWebHook(c echo.Context) error {
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
-				if message.Text == "振込先を追加" {
+				if message.Text == "LINE連携" {
 					user := User{}
 					result := database.DB.Where(&User{LineUserId: event.Source.UserID}).First(&user)
 					if result.RowsAffected > 0 {
